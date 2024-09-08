@@ -4,7 +4,6 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import axios from 'axios';
-import * as cheerio from 'cheerio';
 import { Document } from "langchain/document";
 
 const model = new ChatOpenAI({
@@ -20,19 +19,35 @@ interface SearchResult {
 }
 
 const googleSearch = async (query: string): Promise<SearchResult[]> => {
-  const response = await axios.get(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
-  const $ = cheerio.load(response.data);
-  const results: SearchResult[] = [];
-  $('div.g').each((i, element) => {
-    const titleElement = $(element).find('h3');
-    const title = titleElement.text();
-    const link = titleElement.parent('a').attr('href') || '';
-    const snippet = $(element).find('div.VwiC3b').text();
-    if (title && link && snippet) {
-      results.push({ title, link, snippet });
-    }
+  const data = JSON.stringify({
+    q: query,
+    location: "Mumbai, Maharashtra, India",
+    gl: "in"
   });
-  return results.slice(0, 5);
+
+  const config = {
+    method: 'post',
+    url: 'https://google.serper.dev/search',
+    headers: { 
+      'X-API-KEY': process.env.SERPER_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    data: data
+  };
+
+  try {
+    const response = await axios(config);
+    const searchResults = response.data.organic || [];
+
+    return searchResults.map((result: any) => ({
+      title: result.title,
+      link: result.link,
+      snippet: result.snippet,
+    })).slice(0, 5);
+  } catch (error) {
+    console.error('Error fetching search results:', error);
+    return [];
+  }
 };
 
 let vectorStore: MemoryVectorStore | null = null;
@@ -54,6 +69,15 @@ export async function POST(request: Request) {
     const result = await retriever.invoke(chatHistory.join(" "));
     const resultDocuments = result.map((doc) => doc.pageContent);
 
+    const googleResults = await googleSearch(query);
+    const googleLinks = googleResults.map((res) => ({
+      title: res.title,
+      link: res.link,
+      snippet: res.snippet,
+    }));
+
+    const combinedSnippets = googleResults.map(res => res.snippet).join(" ");
+
     const template = ChatPromptTemplate.fromMessages([
       [
         "system",
@@ -69,19 +93,19 @@ export async function POST(request: Request) {
       context: resultDocuments,
     });
 
-    const relevantLinks = result.map(doc => ({
+    const finalResponse = `${response.content}\n\nAdditional context from web links: ${combinedSnippets}`;
+
+    const relevantLinks = googleLinks.concat(result.map(doc => ({
       title: doc.metadata.source,
       link: doc.metadata.source
-    }));
+    })));
 
+    chatHistory.push(finalResponse);
 
-    chatHistory.push(response.content);
-
-
-    await updateVectorStore(query, response.content);
+    await updateVectorStore(query, finalResponse);
 
     return NextResponse.json({
-      answer: response.content,
+      answer: finalResponse,
       relevantLinks: relevantLinks
     });
 
