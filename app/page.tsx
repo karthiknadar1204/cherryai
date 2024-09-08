@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Trash2 } from 'lucide-react';
+import { Trash2, Menu, X } from 'lucide-react';
 
 interface ChatMessage {
   query: string;
@@ -15,6 +15,7 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [currentChatIndex, setCurrentChatIndex] = useState(0)
   const [allChats, setAllChats] = useState<ChatMessage[][]>([[]])
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   useEffect(() => {
     const savedAllChats = localStorage.getItem('allChats')
@@ -63,11 +64,13 @@ const Page = () => {
     setCurrentChatIndex(newAllChats.length - 1)
     setChatHistory([])
     localStorage.setItem('allChats', JSON.stringify(newAllChats))
+    setIsSidebarOpen(false)
   }
 
   const switchChat = (index: number) => {
     setCurrentChatIndex(index)
     setChatHistory(allChats[index])
+    setIsSidebarOpen(false)
   }
 
   const deleteChat = (index: number) => {
@@ -89,8 +92,14 @@ const Page = () => {
   }
 
   return (
-    <div className="flex h-screen bg-black text-blue-100">
-      <div className="w-64 bg-gray-900 p-4 overflow-y-auto">
+    <div className="flex flex-col md:flex-row h-screen bg-black text-blue-100">
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="md:hidden fixed top-4 left-4 z-20 p-2 bg-gray-800 rounded"
+      >
+        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+      <div className={`${isSidebarOpen ? 'block' : 'hidden'} md:block w-full md:w-64 bg-gray-900 p-4 overflow-y-auto fixed md:static top-0 left-0 h-full z-10`}>
         <button
           onClick={startNewChat}
           className="w-full mb-4 px-4 py-2 bg-blue-600 text-blue-100 rounded hover:bg-blue-700"
@@ -119,7 +128,7 @@ const Page = () => {
         ))}
       </div>
       <div className="flex-1 p-4 overflow-y-auto bg-black">
-        <h1 className="text-2xl font-bold mb-4 text-blue-200">CherryAi</h1>
+        <h1 className="text-2xl font-bold mb-4 text-blue-200 mt-12 md:mt-0">CherryAi</h1>
         <form onSubmit={handleSubmit} className="mb-4">
           <input
             type="text"
@@ -131,7 +140,7 @@ const Page = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="mt-2 px-4 py-2 bg-blue-600 text-blue-100 rounded hover:bg-blue-700 disabled:bg-gray-700"
+            className="mt-2 w-full md:w-auto px-4 py-2 bg-blue-600 text-blue-100 rounded hover:bg-blue-700 disabled:bg-gray-700"
           >
             {isLoading ? 'Searching...' : 'Search'}
           </button>
@@ -139,20 +148,20 @@ const Page = () => {
         {chatHistory.map((chat, index) => (
           <div key={index} className="mb-6 border-b border-blue-900 pb-4">
             <h2 className="text-xl font-semibold mb-2 text-blue-300">Query:</h2>
-            <p className="mb-4 text-blue-100">{chat.query}</p>
+            <p className="mb-4 text-blue-100 break-words">{chat.query}</p>
             <h2 className="text-xl font-semibold mb-2 text-blue-300">Answer:</h2>
-            <p className="mb-4 text-blue-100">{chat.answer}</p>
+            <p className="mb-4 text-blue-100 break-words">{chat.answer}</p>
             <h2 className="text-xl font-semibold mb-2 text-blue-300">Relevant Links:</h2>
             <ul className="list-disc pl-5">
               {chat.relevantLinks.map((link, linkIndex) => (
-                <li key={linkIndex}>
+                <li key={linkIndex} className="mb-1 break-words">
                   <a href={link.link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
                     {link.title}
                   </a>
                 </li>
               ))}
               {extractLinksFromAnswer(chat.answer).map((link, linkIndex) => (
-                <li key={`answer-link-${linkIndex}`}>
+                <li key={`answer-link-${linkIndex}`} className="mb-1 break-words">
                   <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
                     {link}
                   </a>
