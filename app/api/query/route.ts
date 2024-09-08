@@ -74,10 +74,10 @@ export async function POST(request: Request) {
       link: doc.metadata.source
     }));
 
-    // Add the AI's response to chat history
+
     chatHistory.push(response.content);
 
-    // Update vector store with new information
+
     await updateVectorStore(query, response.content);
 
     return NextResponse.json({
