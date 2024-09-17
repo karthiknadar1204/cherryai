@@ -131,12 +131,12 @@ const Page = () => {
         ))}
       </div>
       <div className="flex-1 p-6 overflow-y-auto bg-opacity-75 backdrop-blur-sm">
-        <h1 className="text-4xl font-bold mb-8 text-blue-200 mt-12 md:mt-0 text-center">Welcome to CherryAI</h1>
+        <h1 className="text-4xl font-bold mb-4 text-blue-200 mt-12 md:mt-0 text-center">Welcome to CherryAI</h1>
         <div className="max-w-3xl mx-auto">
           {chatHistory.length === 0 && (
             <div className="text-center text-blue-300 mb-8">
-              <p className="text-lg mb-4">Start a new conversation by typing your query below.</p>
-              <p>CherryAI is here to assist you with any questions you may have!</p>
+              <p className="text-lg mb-2">Ready to explore? Start by asking a question.</p>
+              <p className="text-sm italic">CherryAI is here to assist you on your journey of discovery.</p>
             </div>
           )}
           {chatHistory.map((chat, index) => (
