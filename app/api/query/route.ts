@@ -97,7 +97,8 @@ export async function POST(request: Request) {
 
     const relevantLinks = googleLinks.concat(result.map(doc => ({
       title: doc.metadata.source,
-      link: doc.metadata.source
+      link: doc.metadata.source,
+      snippet: '' // Add an empty snippet to match the SearchResult interface
     })));
 
     chatHistory.push(finalResponse);
